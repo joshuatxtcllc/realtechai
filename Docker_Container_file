@@ -1,0 +1,38 @@
+# Dockerfile
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci –only=production
+
+COPY . .
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+
+CMD [“node”, “app.js”]
+
+# docker-compose.yml (save in a separate file)
+
+version: ‘3.8’
+
+services:
+api:
+build: .
+ports:
+- “3000:3000”
+env_file:
+- .env
+volumes:
+- ./logs:/app/logs
+restart: unless-stopped
+healthcheck:
+test: [“CMD”, “curl”, “-f”, “http://localhost:3000/health”]
+interval: 30s
+timeout: 10s
+retries: 3
+start_period: 10s
