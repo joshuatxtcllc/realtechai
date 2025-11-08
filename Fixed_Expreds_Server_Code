@@ -1,0 +1,254 @@
+require(‘dotenv’).config(); // loads environment variables from .env
+const express = require(‘express’);
+const axios = require(‘axios’);
+const Ajv = require(‘ajv’);
+const addFormats = require(‘ajv-formats’);
+const { Configuration, OpenAIApi } = require(‘openai’);
+const path = require(‘path’);
+
+// 1) Express setup
+const app = express();
+app.use(express.json());
+
+// 2) Serve any static files in /public (for SEO checker, etc.)
+app.use(express.static(path.join(__dirname, ‘public’)));
+
+// 3) Real Estate Schema (simplified inline)
+const realEstateSchema = {
+$schema: ‘http://json-schema.org/draft-07/schema#’,
+title: ‘Real Estate Schema’,
+type: ‘object’,
+properties: {
+property: {
+type: ‘object’,
+properties: {
+id: { type: ‘string’ },
+address: {
+type: ‘object’,
+properties: {
+street: { type: ‘string’ },
+city: { type: ‘string’ },
+state: { type: ‘string’ },
+zip: { type: ‘string’ }
+},
+required: [‘street’, ‘city’, ‘state’, ‘zip’]
+},
+purchase_price: { type: ‘number’ },
+arv: { type: ‘number’ },
+market_status: {
+type: ‘string’,
+enum: [‘lead’, ‘under contract’, ‘pending’, ‘sold’, ‘archived’]
+}
+},
+required: [‘id’, ‘address’, ‘purchase_price’, ‘arv’, ‘market_status’]
+},
+buyer: { /* omitted for brevity, but add your fields here */ },
+lead: { /* omitted for brevity */ },
+contractor: { /* omitted for brevity */ }
+},
+required: [‘property’, ‘buyer’, ‘lead’, ‘contractor’]
+};
+
+// 4) Realtool Data (inline)
+const realtoolData = {
+Realtool: {
+FocusAreas: {
+DealIdentification: {
+Description: “Identifying profitable deals, distressed properties, etc.”,
+Strategies: [
+“Outside the box deal structures”,
+“Creative financing tactics”,
+“Risk minimization strategies”,
+“Maximizing ROI formulas”
+]
+},
+/* … Additional focus areas … */
+},
+Objectives: [
+“Boost profitability”,
+“Reduce administrative overhead”,
+“Provide results-driven solutions”
+],
+Tone: “edgy, direct, street-smart, hyper-focused”
+}
+};
+
+// 5) AJV compile
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
+const validateRealEstateData = ajv.compile(realEstateSchema);
+
+// 6) OpenAI (ChatGPT) Setup
+const openaiConfig = new Configuration({
+apiKey: process.env.OPENAI_API_KEY
+});
+const openaiClient = new OpenAIApi(openaiConfig);
+
+// 7) Landbot, Bitrix, Octoparse, etc. placeholders
+// For demonstration, let’s say we just store them as environment variables, or call them via routes as needed.
+const landbotApiKey = process.env.LANDBOT_API_KEY;
+const bitrixApiUrl = process.env.BITRIX_API_URL;
+const octoparseApiKey = process.env.OCTOPARSE_API_KEY;
+// … you could add real usage in your routes if you have an integration scenario
+
+// 8) Vapi (voice call integration) placeholders
+const vapiPublicToken = process.env.VAPI_PUBLIC_TOKEN;
+const vapiAssistantId = process.env.VAPI_ASSISTANT_ID;
+
+// Vapi call integration
+app.post(’/vapi-call’, async (req, res) => {
+try {
+// Example: Initiate a call using Vapi
+// In reality, you’d do something like:
+// const vapiResponse = await axios.post(‘https://api.vapi.ai/call’, { … }, { headers: { Authorization: `Bearer ${SOME_TOKEN}` } });
+res.json({
+message: ‘Vapi call initiated (placeholder). Add real logic here.’,
+token: vapiPublicToken,
+assistantId: vapiAssistantId
+});
+} catch (error) {
+console.error(‘Error calling Vapi:’, error);
+res.status(500).json({ error: ‘Vapi integration error’ });
+}
+});
+
+// (A) Property Analysis route
+app.post(’/property-analysis’, async (req, res) => {
+try {
+// Validate
+const isValid = validateRealEstateData(req.body);
+if (!isValid) {
+return res.status(400).json({
+errors: validateRealEstateData.errors,
+message: ‘Invalid real estate data.’
+});
+}
+
+```
+// Example: Google Places call
+const googleUrl = `https://places.googleapis.com/v1/places/ChIJj61dQgK6j4AR4GeTYWZsKWw?fields=id,displayName&key=${process.env.GOOGLE_PLACES_API_KEY}`;
+let googleData;
+try {
+  const gRes = await axios.get(googleUrl);
+  googleData = gRes.data;
+} catch (err) {
+  googleData = { error: 'Failed to fetch from Google Places' };
+}
+
+// Return validated data + Google info
+res.json({
+  message: 'Analysis complete',
+  property: req.body.property,
+  googlePlacesResult: googleData
+});
+```
+
+} catch (err) {
+console.error(’/property-analysis error:’, err);
+res.status(500).json({ error: ‘Server error’ });
+}
+});
+
+// (B) Scraper route
+app.get(’/scrape’, async (req, res) => {
+try {
+const { url } = req.query;
+if (!url) return res.status(400).json({ error: ‘Missing ?url=’ });
+
+```
+// Call Scraper API
+const scrapeUrl = `https://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(url)}`;
+const response = await axios.get(scrapeUrl);
+res.json({
+  scrapedUrl: url,
+  statusCode: response.status,
+  data: response.data
+});
+```
+
+} catch (error) {
+console.error(‘Error scraping:’, error);
+res.status(500).json({ error: ‘Scrape failed’ });
+}
+});
+
+// (C) ChatGPT-like route
+app.post(’/chat’, async (req, res) => {
+try {
+const userPrompt = req.body.prompt;
+if (!userPrompt) {
+return res.status(400).json({ error: ‘Please provide a “prompt” in JSON’ });
+}
+
+```
+// Example with text-davinci-003 or gpt-3.5-turbo, up to you
+const completion = await openaiClient.createCompletion({
+  model: 'text-davinci-003',
+  prompt: userPrompt,
+  max_tokens: 150,
+  temperature: 0.7
+});
+
+const assistantReply = completion.data.choices[0].text.trim();
+res.json({ assistant: assistantReply });
+```
+
+} catch (err) {
+console.error(’/chat error:’, err);
+res.status(500).json({ error: ‘OpenAI error’ });
+}
+});
+
+// (D) Realtool route
+app.get(’/realtool’, (req, res) => {
+res.json(realtoolData);
+});
+
+// (E) PageSpeed route
+app.get(’/pagespeed’, async (req, res) => {
+try {
+const { site } = req.query;
+if (!site) return res.status(400).json({ error: ‘Missing ?site=’ });
+
+```
+// Ensure correct format
+let urlToAnalyze = site.trim();
+if (!/^https?:\/\//i.test(urlToAnalyze)) {
+  urlToAnalyze = 'https://' + urlToAnalyze;
+}
+
+const apiKey = process.env.GOOGLE_PLACES_API_KEY; // or another separate key for pagespeed?
+const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(urlToAnalyze)}&key=${apiKey}&strategy=mobile`;
+
+const pageRes = await axios.get(apiUrl);
+const data = pageRes.data;
+
+const performanceScore = data.lighthouseResult?.categories?.performance?.score
+  ? (data.lighthouseResult.categories.performance.score * 100).toFixed(2)
+  : 'No score';
+
+res.json({
+  website: urlToAnalyze,
+  performanceScore
+});
+```
+
+} catch (err) {
+console.error(‘PageSpeed error:’, err.message);
+res.status(500).json({ error: ‘PageSpeed check failed’ });
+}
+});
+
+// Handle frontend routes
+app.use(express.static(path.join(__dirname, ‘frontend/build’)));
+
+// Optionally, handle all other requests by serving the index.html
+app.get(’*’, (req, res) => {
+res.sendFile(path.join(__dirname, ‘frontend/build’, ‘index.html’));
+});
+
+// 9) Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+console.log(`Server is running on http://localhost:${PORT}`);
+});
