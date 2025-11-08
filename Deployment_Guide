@@ -1,0 +1,149 @@
+# Deployment Guide for Real Estate API Server
+
+## Issues Fixed in the Code
+
+1. **OpenAI API Key Leak**: Removed hardcoded API key that was accidentally included in the code.
+1. **OpenAI Library Import**: Fixed the import for OpenAI Configuration and OpenAIApi classes.
+1. **Removed duplicate static file serving**: Consolidated the code for serving static files.
+
+## Prerequisites
+
+Before deploying, make sure you have:
+
+1. **Node.js and npm** installed on your server
+1. **Environment variables** set up in a `.env` file:
+
+```
+# API Keys
+OPENAI_API_KEY=your_openai_key
+GOOGLE_PLACES_API_KEY=your_google_places_key
+SCRAPER_API_KEY=your_scraper_api_key
+LANDBOT_API_KEY=your_landbot_key
+VAPI_PUBLIC_TOKEN=your_vapi_token
+VAPI_ASSISTANT_ID=your_vapi_assistant_id
+
+# Other Config
+PORT=3000
+BITRIX_API_URL=your_bitrix_url
+OCTOPARSE_API_KEY=your_octoparse_key
+```
+
+## Deployment Options
+
+### Option 1: Deploy to Heroku
+
+1. **Create a Heroku account** if you don’t have one
+1. **Install the Heroku CLI** and login:
+   
+   ```
+   npm install -g heroku
+   heroku login
+   ```
+1. **Initialize Git** (if not already done):
+   
+   ```
+   git init
+   git add .
+   git commit -m "Initial commit"
+   ```
+1. **Create a Heroku app**:
+   
+   ```
+   heroku create your-app-name
+   ```
+1. **Set environment variables**:
+   
+   ```
+   heroku config:set OPENAI_API_KEY=your_openai_key
+   heroku config:set GOOGLE_PLACES_API_KEY=your_google_places_key
+   # Set all other variables...
+   ```
+1. **Deploy**:
+   
+   ```
+   git push heroku main
+   ```
+
+### Option 2: Deploy to AWS Elastic Beanstalk
+
+1. **Install the AWS CLI and EB CLI**
+1. **Initialize your EB application**:
+   
+   ```
+   eb init
+   ```
+1. **Create an environment**:
+   
+   ```
+   eb create your-environment-name
+   ```
+1. **Set environment variables** through the AWS Console or:
+   
+   ```
+   eb setenv OPENAI_API_KEY=your_openai_key GOOGLE_PLACES_API_KEY=your_google_places_key ...
+   ```
+1. **Deploy**:
+   
+   ```
+   eb deploy
+   ```
+
+### Option 3: Deploy to a VPS (Digital Ocean, AWS EC2, etc.)
+
+1. **SSH into your server**
+1. **Clone your repository**:
+   
+   ```
+   git clone your-repo-url
+   cd your-repo-directory
+   ```
+1. **Install dependencies**:
+   
+   ```
+   npm install
+   ```
+1. **Create a .env file** with all required variables
+1. **Use PM2 to run the application**:
+   
+   ```
+   npm install -g pm2
+   pm2 start app.js
+   pm2 startup
+   pm2 save
+   ```
+
+## Frontend Setup
+
+Ensure your frontend is built and placed in the `frontend/build` directory. If you’re using a React app:
+
+```
+cd frontend
+npm install
+npm run build
+```
+
+## Testing Your Deployment
+
+After deployment, test all your endpoints:
+
+- GET `/realtool` - Should return realtool data
+- POST `/property-analysis` - Test with valid property data
+- GET `/scrape?url=https://example.com` - Test scraper functionality
+- POST `/chat` - Test OpenAI integration
+- GET `/pagespeed?site=example.com` - Test Google PageSpeed integration
+
+## Security Considerations
+
+1. **Secure your API keys**: Never commit API keys to your repository
+1. **Rate limiting**: Consider adding rate limiting to prevent abuse
+1. **Input validation**: Ensure all inputs are properly validated
+1. **HTTPS**: Always use HTTPS in production
+1. **CORS**: Set appropriate CORS headers if needed
+
+## Monitoring
+
+Consider adding monitoring solutions:
+
+- **Sentry.io** for error tracking
+- **New Relic** or **Datadog** for performance monitoring
+- **Loggly** or **Papertrail** for log management
